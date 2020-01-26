@@ -14,7 +14,7 @@ Artificial Organs
 
 
 
-[![DOI](https://zenodo.org/badge/236382808.svg)](https://doi.org/10.5281/zenodo.3628027)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3628027.svg)](https://doi.org/10.5281/zenodo.3628027)
 
 
 
