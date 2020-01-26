@@ -1,0 +1,116 @@
+#include "stdafx.h"
+#include "OPAL2_MasterScript_V22.h"
+
+// Copyright 2020 Sebastian Engel
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+//
+//
+//
+//
+// #############################################################################
+// Input script for OPAL++ 
+//
+// Part of the Work:
+// Multi-objective Design Optimization of a Tesla-type Rotary Blood Pump
+//
+// Sets up the optimizer
+// The path "userdir" needs to be adapted to your environment
+//
+// written by Sebastian Engel
+// #############################################################################
+
+
+OPAL2_MASTERSCRIPT_BEGIN
+    
+  OPAL2.SETUP.PROBLEM.NAME({Tesla pump optimization});
+	OPAL2.SETUP.PROBLEM.DESCRIPTION({Multi-objective Design Optimization of a Tesla-type Rotary Blood Pump});
+
+	// Setup Scripts
+	OPAL2.SETUP.FILES.ADD({/userdir/Input/Tesla_simulation.o2script},{simulation.o2script},OPAL2SCRIPT);
+	OPAL2.SETUP.FILES.ADD({/userder/Results},{},WORKDIRECTORY);
+
+	// Input scripts
+	OPAL2.SETUP.FILES.ADD({/userdir/Input/get_icem_license.sh},{get_icem_license.sh},TEXT_DATAFILE);
+	OPAL2.SETUP.FILES.ADD({/userdir/Input/in_icem.tcl},{in_icem.tcl},TEXT_DATAFILE);	
+	OPAL2.SETUP.FILES.ADD({/userdir/Input/in_parameter.tcl},{in_parameter.tcl},TEXT_DATAFILE);
+	OPAL2.SETUP.FILES.ADD({/userdir/Input/in_tesrot.java},{in_tesrot.java},TEXT_DATAFILE);
+	OPAL2.SETUP.FILES.ADD({/userdir/Input/in_extractvalues.sh},{in_extractvalues.sh},TEXT_DATAFILE);
+
+	// Files to Retrieve
+	OPAL2.SETUP.FILES.ADD({case.tar},{case.tar},RETAINFILE);	
+	
+	//Solver method
+	OPAL2.SETUP.SOLVER.METHOD=SPEA2;
+	
+	//Variables
+	OPAL2.SETUP.PROBLEM.VARIABLES.ADD_REAL({VOLCONSTR},0.01,0.8,1.0);	
+	OPAL2.SETUP.PROBLEM.VARIABLES.ADD_REAL({VOLSP},0.1,2.0,1.0);	
+	OPAL2.SETUP.PROBLEM.VARIABLES.ADD_REAL({DSKSP},0.4,2.0,1.0);	
+	//OPAL2.SETUP.PROBLEM.VARIABLES.ADD_REAL({RDOUT},15.0,50.0,1.0);	
+	//OPAL2.SETUP.PROBLEM.VARIABLES.ADD_REAL({RDIN},5.0,15.0,1.0);	
+	OPAL2.SETUP.PROBLEM.VARIABLES.FINALIZED=TRUE;
+
+
+	// Input Constants
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({RDOUT},{25.0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({RDIN},{5.0});
+	
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({BLADENUMBER},{10.0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({DSKTH},{0.5});
+
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({DIFFANGLE},{8.0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({DIFFRATIO},{3.0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({TONGUERADIUS},{0.05});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({SPEED},{0.0036/1065.0*(4.0/DSKSP)*(4.0/DSKSP)});
+
+	//Output variables
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({ICEM_VERSION},{0});	
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({REPORT_SPEED},{0});	
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({REPORT_PRESDROP},{0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({REPORT_TORQUE},{0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({REPORT_EFFICIENCY},{0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.ADD({REPORT_HEMOLYSIS},{0});
+	OPAL2.SETUP.PROBLEM.DERIVED_VARIABLES.FINALIZED=TRUE;
+
+	//Maximize power coefficient (not direct evaluation)
+	OPAL2.SETUP.PROBLEM.OBJECTIVES.ADD_INTERNAL({OBJECTIVE_CP},MAXIMIZE,{REPORT_EFFICIENCY},false,false,0,1,NO_NORMALIZATION,1);
+	OPAL2.SETUP.PROBLEM.OBJECTIVES.ADD_INTERNAL({OBJECTIVE_HEMOLYSIS},MINIMIZE,{REPORT_HEMOLYSIS},false,false,0,1,NO_NORMALIZATION,1);
+	OPAL2.SETUP.PROBLEM.OBJECTIVES.FINALIZED=TRUE;
+
+        OPAL2.SETUP.PROBLEM.CONSTRAINS.ADD({RDIN+10.0-RDOUT},DESIGN,1.0);
+	OPAL2.SETUP.PROBLEM.CONSTRAINS.FINALIZED=TRUE;
+	OPAL2.SETUP.PROBLEM.FINALIZED=TRUE;
+
+	//Separator: 'space'
+	OPAL2.RUNTIME.DATAFILES.SEPARATOR={ };
+	//Print information of all individuals
+	OPAL2.RUNTIME.INFORMATION.REFRESHRATE=INDIVIDUAL;
+	//Solver settings
+	OPAL2.SETUP SOLVER.CHANGE_SETTINGS(N,100);
+	OPAL2.SETUP SOLVER.CHANGE_SETTINGS(GENERATION_MAX,10)	
+ 	//Dual-mode license
+        OPAL2.RUNTIME.LICENSE_SHIFTING(3.0);
+        OPAL2.RUNTIME.LICENSING.ADD({ANSYS},1,1);
+    	//DOE
+    	OPAL2.SETUP.SOLVER.INITIALIZATION.TYPE=SOBOL;
+    	OPAL2.SETUP.SOLVER.INITIALIZATION.CONSTRAINED=TRUE;
+
+OPAL2_MASTERSCRIPT_END

@@ -1,0 +1,107 @@
+// Copyright 2020 Sebastian Engel
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+//
+//
+//
+//
+// #############################################################################
+// Java-Macro for Siemens StarCCM+
+//
+// Part of the Work:
+// Multi-objective Design Optimization of a Tesla-type Rotary Blood Pump
+//
+// Runs an individual evaluation
+//
+// written by Sebastian Engel
+// #############################################################################
+
+#include "stdafx.h"
+#include "OPAL2_SimulationScript_V22.h"
+
+OPAL2_SIMULATIONSCRIPT_BEGIN
+	//Substitute values into the files
+	OPAL2S.TOOLS.SUBSTITUTE({in_parameter.tcl});
+	OPAL2S.TOOLS.SUBSTITUTE({in_tesrot.java});
+	
+
+	// -------------------------------------------------
+	// Make Mesh
+	// -------------------------------------------------
+	OPAL2S.LICENSING.BORROW({ANSYS});	
+		OPAL2S.TOOLS.COMMAND({rm version.txt});
+		OPAL2S.TOOLS.COMMAND({sh get_icem_license.sh &});
+		OPAL2S.TOOLS.WAITFOR({version.txt});
+		OPAL2S.PROCESSION.PROCESSFILE({version.txt},SINGLE_VALUE,{ICEM_VERSION});
+	OPAL2S.LICENSING.RETURN({ANSYS});
+		
+	OPAL2S.TOOLS.COMMAND({export LM_LICENSE_FILE=1055@liclux.yourlicenseserver.de; icemcfd -batch -script in_icem.tcl > icemlog.txt 2>&1},TRUE);
+
+	OPAL2S.TOOLS.APPEND_TO_LOG({icemlog.txt},{ICEM output:});	
+	
+	// Error detection	
+	OPAL2S.PROCESSION.VALIDITYCHECK({icemlog.txt},{Licensed number of users already reached},NOT_PRESENT,{ICEM, no licences left});
+	OPAL2S.PROCESSION.VALIDITYCHECK({icemlog.txt},{ERROR},NOT_PRESENT,{ICEM meshing error});
+	OPAL2S.PROCESSION.VALIDITYCHECK({icemlog.txt},{Error},NOT_PRESENT,{ICEM meshing error});
+
+	
+
+	// -------------------------------------------------
+	//  RUN
+	// -------------------------------------------------
+	OPAL2S.TOOLS.COMMAND({starccm+ -new -batch in_tesrot.java -licpath 1999@flex.cd-adapco.com -podkey XXXXXXXXXXXXXXXXXXXXXX -rsh ssh -np 16 -power -collab > output.txt 2>&1},TRUE);
+	OPAL2S.TOOLS.APPEND_TO_LOG({output.txt},{Star CCM+ output:});
+	
+	// Error detection
+	OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{Divergence detected},NOT_PRESENT,{Divergence error});
+	OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{point exception},NOT_PRESENT,{SIGFPE detected});
+	OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{Error},NOT_PRESENT,{Error detected});
+	
+	// -------------------------------------------------
+	// Post
+	// -------------------------------------------------	
+	OPAL2S.TOOLS.COMMAND({./in_extractvalues.sh presDrop},TRUE);
+	OPAL2S.TOOLS.COMMAND({./in_extractvalues.sh torque},TRUE);
+	OPAL2S.TOOLS.COMMAND({./in_extractvalues.sh speed},TRUE);
+	OPAL2S.TOOLS.COMMAND({./in_extractvalues.sh hemolysis},TRUE);
+	OPAL2S.TOOLS.COMMAND({./in_extractvalues.sh eff},TRUE);
+
+
+	OPAL2S.PROCESSION.PROCESSFILE({speed2.val},SINGLE_VALUE,{REPORT_SPEED});		
+	OPAL2S.PROCESSION.PROCESSFILE({presDrop.val},SINGLE_VALUE,{REPORT_PRESDROP});	
+	OPAL2S.PROCESSION.PROCESSFILE({torque.val},SINGLE_VALUE,{REPORT_TORQUE});		
+	OPAL2S.PROCESSION.PROCESSFILE({hemolysis.val},SINGLE_VALUE,{REPORT_HEMOLYSIS});		
+	OPAL2S.PROCESSION.PROCESSFILE({eff.val},SINGLE_VALUE,{REPORT_EFFICIENCY});		
+	
+	OPAL2S.TOOLS.COMMAND({tar -cf case.tar * > ziplog.txt 2>&1},TRUE);			
+	OPAL2S.TOOLS.APPEND_TO_LOG({ziplog.txt},{tar output:});
+
+        // Error detection
+        OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{Divergence detected},NOT_PRESENT,{Divergence error});
+        OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{point exception},NOT_PRESENT,{SIGFPE detected});
+        OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{Error},NOT_PRESENT,{Error detected})
+	OPAL2S.PROCESSION.VALIDITYCHECK({output.txt},{Stopping criteria X-momentum Criterion and Y-momentum Criterion and Z-momentum Criterion and Continuity Criterion and Tke Criterion and Sdr Criterion satisfied},PRESENT,{Not Converged});
+	
+	//Check, if any dynamic library based contrains have been violated
+	OPAL2S.NATIVE.CONTROL.IF({constrain>0});
+		OPAL2S.NATIVE.PROCESSION.EQUATION({validity},{1});
+	OPAL2S.NATIVE.CONTROL.END;
+
+OPAL2_SIMULATIONSCRIPT_END
