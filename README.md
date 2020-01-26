@@ -1,4 +1,4 @@
-# Supplimentary Files
+# Supplementary Files
 
 This repository is supplementary material for the publication:
 
