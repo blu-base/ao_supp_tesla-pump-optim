@@ -12,7 +12,10 @@ Artificial Organs
 
 # How to cite this repository
 
-[![DOI]()]()
+
+
+[![DOI](https://zenodo.org/badge/236382808.svg)](https://doi.org/10.5281/zenodo.3628027)
+
 
 
 
