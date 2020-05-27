@@ -10,7 +10,7 @@ for run in {01..20}; do
 	
 	# create copy for individual run
 	COMPOSEDFOLDERNAME=${RUNNAMEBASE}${run}
-	cp -r common $COMPOSEDFOLDERNAME
+	cp -L -r common $COMPOSEDFOLDERNAME
 
 	# paste individual mesh size factor
 	SCALINGFACTOR=$(echo "scale=2; ${BASEFACTOR} * ${run}" | bc)
