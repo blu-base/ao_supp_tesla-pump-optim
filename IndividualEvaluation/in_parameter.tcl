@@ -11,4 +11,4 @@ set volsp 1.5		# mm	  # tongue-to-impeller gap
 set tonguerd 0.05	# mm      # tongue radius
 set volConstructor 0.1	# -   # volute constructor parameter
 #
-set nglob 0.3       # -       # Globa mesh density scaling factor
+set nglob 0.3       # -       # Global mesh density scaling factor
