@@ -118,7 +118,7 @@ set domth [expr $dsksp+$dskth]
 ################################################################################
 
 # Global mesh scale
-set nglob 0.3	
+#set nglob 0.3	
 
 # Boundary layer thickness (global)	
 # Should be less than a third of $dsksp
