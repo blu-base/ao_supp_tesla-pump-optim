@@ -2,9 +2,9 @@
 #
 # Run cases sequentially on the current machine
 
-RUNNAMEBASE="M"
+RUNNAMEBASE="C"
 
-for run in {01..20}; do
+for run in {01..10}; do
 	
 	COMPOSEDFOLDERNAME=${RUNNAMEBASE}${run}
 	cd $COMPOSEDFOLDERNAME

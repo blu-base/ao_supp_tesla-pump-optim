@@ -3,10 +3,10 @@
 # prepares runs for mesh dependency study
 # the parameter nglob is set to the product of $BASEFACTOR and $run
 
-RUNNAMEBASE="M"
-BASEFACTOR=0.05
+RUNNAMEBASE="C"
+BASEFACTOR=0.01
 
-for run in {01..20}; do
+for run in {01..10}; do
 	
 	# create copy for individual run
 	COMPOSEDFOLDERNAME=${RUNNAMEBASE}${run}
